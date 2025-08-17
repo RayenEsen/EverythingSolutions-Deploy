@@ -1,0 +1,76 @@
+name: CI/CD Deploy EverythingSolutions
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      # 1️⃣ Checkout the meta repo (current repo)
+      - name: Checkout Meta Repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Pull Frontend repo
+      - name: Checkout Frontend
+        uses: actions/checkout@v3
+        with:
+          repository: RayenEsen/EverythingSolutions
+          path: frontend
+
+      # 3️⃣ Pull Backend repo
+      - name: Checkout Backend
+        uses: actions/checkout@v3
+        with:
+          repository: RayenEsen/ES_Backend
+          path: backend
+
+      # 4️⃣ Setup Node.js for Angular
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      # 5️⃣ Install Angular dependencies
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm install
+
+      # 6️⃣ Build Angular frontend
+      - name: Build Angular
+        working-directory: frontend
+        run: npm run build -- --prod
+
+      # 7️⃣ Setup .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      # 8️⃣ Restore and build .NET backend
+      - name: Restore & Build Backend
+        working-directory: backend
+        run: |
+          dotnet restore ES_Backend.csproj
+          dotnet build ES_Backend.csproj --configuration Release
+
+      # 9️⃣ Apply EF Core Migrations
+      - name: Apply Database Migrations
+        working-directory: backend
+        run: |
+          dotnet ef database update --project ES_Backend.csproj --startup-project ES_Backend.csproj
+
+      # 🔟 Deploy Frontend to IIS
+      - name: Deploy Frontend to IIS
+        run: |
+          Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_Frontend\*" 
+          Copy-Item -Path "frontend\dist\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
+
+      # 1️⃣1️⃣ Deploy Backend to IIS
+      - name: Deploy Backend to IIS
+        run: |
+          Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_webapi\*" 
+          Copy-Item -Path "backend\bin\Release\net8.0\publish\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_webapi" -Recurse
