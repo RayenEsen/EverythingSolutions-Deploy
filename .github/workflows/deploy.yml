@@ -50,7 +50,7 @@ jobs:
       # 6️⃣ Build Angular frontend (production config)
       - name: Build Angular
         working-directory: frontend
-        run: npm run build -- --configuration production
+        run: npx ng build --configuration=production
         # Builds the Angular frontend in production mode, outputting static files directly to 'C:/Users/BLADE/Desktop/Production_ES/Frontend'.
 
       # 7️⃣ Stop IIS Frontend Site
