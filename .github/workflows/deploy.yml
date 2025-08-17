@@ -95,7 +95,7 @@ jobs:
       - name: Backup Production Database
         run: |
           $backupFile = "C:/Users/BLADE/Desktop/Work Folder/Production_ES/DB_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').bak"
-          Invoke-Sqlcmd -ServerInstance "YOUR_SQL_SERVER_NAME" -Database "YOUR_DB_NAME" -Query "BACKUP DATABASE [YOUR_DB_NAME] TO DISK = N'$backupFile' WITH NOFORMAT, INIT, NAME = 'DB-Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
+          Invoke-Sqlcmd -ServerInstance "WIN-TBM17729TGQ\MSSQLSERVER01" -Database "EverythingSolutions_DB" -Query "BACKUP DATABASE [EverythingSolutions_DB] TO DISK = N'$backupFile' WITH NOFORMAT, INIT, NAME = 'DB-Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
         # Backs up the production SQL Server database to a timestamped .bak file before applying any changes.
 
       # 1️⃣4️⃣ Apply EF Core Migrations
