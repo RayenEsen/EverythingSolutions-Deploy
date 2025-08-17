@@ -3,30 +3,33 @@ name: CI/CD Deploy EverythingSolutions
 on:
   push:
     branches:
-      - main
+      - main     # Frontend
+      - master   # Backend
 
 jobs:
   deploy:
     runs-on: self-hosted
 
     steps:
-      # 1️⃣ Checkout the meta repo (current repo)
+      # 1️⃣ Checkout Meta Repo (current repo)
       - name: Checkout Meta Repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Pull Frontend repo
+      # 2️⃣ Pull Frontend repo (always from main)
       - name: Checkout Frontend
         uses: actions/checkout@v3
         with:
           repository: RayenEsen/EverythingSolutions
           path: frontend
+          ref: main
 
-      # 3️⃣ Pull Backend repo
+      # 3️⃣ Pull Backend repo (always from master)
       - name: Checkout Backend
         uses: actions/checkout@v3
         with:
           repository: RayenEsen/ES_Backend
           path: backend
+          ref: master
 
       # 4️⃣ Setup Node.js for Angular
       - name: Setup Node.js
