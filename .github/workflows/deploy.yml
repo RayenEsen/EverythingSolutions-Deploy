@@ -14,7 +14,6 @@ jobs:
       # 1️⃣ Checkout Meta Repo (current repo)
       - name: Checkout Meta Repo
         uses: actions/checkout@v3
-        # Checks out the code from the current repository (the meta/deployment repo) to the runner.
 
       # 2️⃣ Pull Frontend repo (always from main)
       - name: Checkout Frontend
@@ -23,7 +22,6 @@ jobs:
           repository: RayenEsen/EverythingSolutions
           path: frontend
           ref: main
-        # Clones the frontend repository (EverythingSolutions) from the 'main' branch into the 'frontend' folder.
 
       # 3️⃣ Pull Backend repo (always from master)
       - name: Checkout Backend
@@ -32,56 +30,46 @@ jobs:
           repository: RayenEsen/ES_Backend
           path: backend
           ref: master
-        # Clones the backend repository (ES_Backend) from the 'master' branch into the 'backend' folder.
 
       # 4️⃣ Setup Node.js for Angular
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-        # Installs Node.js version 18, required for building the Angular frontend.
 
       # 5️⃣ Install Angular dependencies
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm install
-        # Installs all npm dependencies for the Angular frontend.
 
       # 6️⃣ Build Angular frontend (production config)
       - name: Build Angular
         working-directory: frontend
-        run: ng build --configuration=production
-        # Builds the Angular frontend in production mode, outputting static files directly to 'C:/Users/BLADE/Desktop/Production_ES/Frontend'.
+        run: ng build ES --configuration=production
 
       # 7️⃣ Stop IIS Frontend Site
       - name: Stop IIS Frontend
         run: Stop-WebSite -Name "EverythingSolutions_Frontend" 
-        # Stops the IIS site for the frontend to prepare for deployment.
 
       # 8️⃣ Deploy Frontend to IIS
       - name: Deploy Frontend to IIS
         run: |
           Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_Frontend\*" 
           Copy-Item -Path "C:/Users/BLADE/Desktop/Production_ES/Frontend/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
-        # Deletes all files in the IIS frontend web root, then copies files from 'C:/Users/BLADE/Desktop/Production_ES/Frontend' to the IIS web root.
-        # (Note: This may not be copying the latest Angular build unless you copy the build output to this folder.)
 
       # 9️⃣ Start IIS Frontend Site
       - name: Start IIS Frontend
         run: Start-WebSite -Name "EverythingSolutions_Frontend"
-        # Starts the IIS site for the frontend after deployment.
 
       # 🔟 Setup .NET SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
-        # Installs .NET SDK version 8, required for building the backend.
 
       # 1️⃣1️⃣ Stop IIS Backend Site
       - name: Stop IIS Backend
         run: Stop-WebSite -Name "EverythingSolutions_webapi"
-        # Stops the IIS site for the backend API to prepare for deployment.
 
       # 1️⃣2️⃣ Restore & Build Backend
       - name: Restore & Build Backend
@@ -89,37 +77,25 @@ jobs:
         run: |
           dotnet restore ES_Backend.csproj
           dotnet publish ES_Backend.csproj --configuration Release --output "C:\Users\BLADE\Desktop\Work Folder\Production_ES\Backend\update"
-        # Restores NuGet packages for the backend, then builds and publishes the backend to the specified output folder.
 
       # 1️⃣3️⃣ Backup Production Database
       - name: Backup Production Database
         run: |
           $backupFile = "C:/Users/BLADE/Desktop/Work Folder/Production_ES/DB_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').bak"
           Invoke-Sqlcmd -ServerInstance "WIN-TBM17729TGQ\MSSQLSERVER01" -Database "EverythingSolutions_DB" -Query "BACKUP DATABASE [EverythingSolutions_DB] TO DISK = N'$backupFile' WITH NOFORMAT, INIT, NAME = 'DB-Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
-        # Backs up the production SQL Server database to a timestamped .bak file before applying any changes.
 
       # 1️⃣4️⃣ Apply EF Core Migrations
       - name: Apply Database Migrations
         working-directory: backend
         run: |
           dotnet ef database update --project ES_Backend.csproj --startup-project ES_Backend.csproj
-        # Applies any pending Entity Framework Core migrations to update the database schema.
 
       # 1️⃣5️⃣ Deploy Backend to IIS
       - name: Deploy Backend to IIS
         run: |
           Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_webapi\*" 
           Copy-Item -Path "C:\Users\BLADE\Desktop\Work Folder\Production_ES\Backend\update\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_webapi" -Recurse
-        # Deletes all files in the IIS backend web root, then copies the newly published backend files to the IIS web root.
 
       # 1️⃣6️⃣ Start IIS Backend Site
       - name: Start IIS Backend
         run: Start-WebSite -Name "EverythingSolutions_webapi"
-        # Starts the IIS site for the backend API after deployment.
-          Copy-Item -Path "C:\Users\BLADE\Desktop\Work Folder\Production_ES\Backend\update\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_webapi" -Recurse
-        # Deletes all files in the IIS backend web root, then copies the newly published backend files to the IIS web root.
-
-      # 1️⃣6️⃣ Start IIS Backend Site
-      - name: Start IIS Backend
-        run: Start-WebSite -Name "EverythingSolutions_webapi"
-        # Starts the IIS site for the backend API after deployment.
