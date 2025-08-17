@@ -39,38 +39,60 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      # 6️⃣ Build Angular frontend
+      # 6️⃣ Build Angular frontend (production config)
       - name: Build Angular
         working-directory: frontend
-        run: npm run build -- --prod
+        run: npm run build -- --configuration production
 
-      # 7️⃣ Setup .NET SDK
+      # 7️⃣ Stop IIS Frontend Site
+      - name: Stop IIS Frontend
+        run: Stop-WebSite -Name "EverythingSolutions_Frontend" 
+
+      # 8️⃣ Deploy Frontend to IIS
+      - name: Deploy Frontend to IIS
+        run: |
+          Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_Frontend\*" 
+          Copy-Item -Path "C:/Users/BLADE/Desktop/Production_ES/Frontend/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
+
+      # 9️⃣ Start IIS Frontend Site
+      - name: Start IIS Frontend
+        run: Start-WebSite -Name "EverythingSolutions_Frontend"
+
+      # 🔟 Setup .NET SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      # 8️⃣ Restore and build .NET backend
+      # 1️⃣1️⃣ Stop IIS Backend Site
+      - name: Stop IIS Backend
+        run: Stop-WebSite -Name "EverythingSolutions_webapi"
+
+      # 1️⃣2️⃣ Restore & Build Backend
       - name: Restore & Build Backend
         working-directory: backend
         run: |
           dotnet restore ES_Backend.csproj
-          dotnet build ES_Backend.csproj --configuration Release
+          dotnet publish ES_Backend.csproj --configuration Release --output "C:/Users/BLADE/Desktop/Work Folder/Production_ES/Backend"
 
-      # 9️⃣ Apply EF Core Migrations
+      # 1️⃣3️⃣ Backup Production Database
+      - name: Backup Production Database
+        run: |
+          $backupFile = "C:/Users/BLADE/Desktop/Work Folder/Production_ES/DB_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').bak"
+          Invoke-Sqlcmd -ServerInstance "YOUR_SQL_SERVER_NAME" -Database "YOUR_DB_NAME" -Query "BACKUP DATABASE [YOUR_DB_NAME] TO DISK = N'$backupFile' WITH NOFORMAT, INIT, NAME = 'DB-Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
+
+      # 1️⃣4️⃣ Apply EF Core Migrations
       - name: Apply Database Migrations
         working-directory: backend
         run: |
           dotnet ef database update --project ES_Backend.csproj --startup-project ES_Backend.csproj
 
-      # 🔟 Deploy Frontend to IIS
-      - name: Deploy Frontend to IIS
-        run: |
-          Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_Frontend\*" 
-          Copy-Item -Path "frontend\dist\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
-
-      # 1️⃣1️⃣ Deploy Backend to IIS
+      # 1️⃣5️⃣ Deploy Backend to IIS
       - name: Deploy Backend to IIS
         run: |
           Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_webapi\*" 
-          Copy-Item -Path "backend\bin\Release\net8.0\publish\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_webapi" -Recurse
+          Copy-Item -Path "C:/Users/BLADE/Desktop/Work Folder/Production_ES/Backend/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_webapi" -Recurse
+
+      # 1️⃣6️⃣ Start IIS Backend Site
+      - name: Start IIS Backend
+        run: Start-WebSite -Name "EverythingSolutions_webapi"
