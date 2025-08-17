@@ -11,7 +11,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # 1️⃣ Checkout Meta Repo (current repo)
+      # 1️⃣ Checkout Meta Repo (current deploy repo)
       - name: Checkout Meta Repo
         uses: actions/checkout@v3
 
@@ -22,6 +22,7 @@ jobs:
           repository: RayenEsen/EverythingSolutions
           path: frontend
           ref: main
+          token: ${{ secrets.DEPLOY_TOKEN }}
 
       # 3️⃣ Pull Backend repo (always from master)
       - name: Checkout Backend
@@ -30,6 +31,7 @@ jobs:
           repository: RayenEsen/ES_Backend
           path: backend
           ref: master
+          token: ${{ secrets.DEPLOY_TOKEN }}
 
       # 4️⃣ Setup Node.js for Angular
       - name: Setup Node.js
@@ -37,12 +39,12 @@ jobs:
         with:
           node-version: 18
 
-      # 5️⃣ Install Angular dependencies
+      # 5️⃣ Install Frontend Dependencies
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm install
 
-      # 6️⃣ Build Angular frontend (production config)
+      # 6️⃣ Build Angular frontend
       - name: Build Angular
         working-directory: frontend
         run: ng build ES --configuration=production
