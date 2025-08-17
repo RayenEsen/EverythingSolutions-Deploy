@@ -1,4 +1,4 @@
-name: CI/CD Deploy EverythingSolutions
+name: CI/CD Deploy EverythingSolutions (Debug)
 
 on:
   push:
@@ -31,6 +31,16 @@ jobs:
           path: backend
           ref: master
 
+      # 🔍 Debug Node.js / npm versions
+      - name: Debug Node.js & npm
+        run: |
+          node -v
+          npm -v
+          echo "Working directory:"
+          pwd
+          echo "Repo structure:"
+          ls -la
+
       # 4️⃣ Setup Node.js for Angular
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -40,12 +50,25 @@ jobs:
       # 5️⃣ Install Angular dependencies
       - name: Install Frontend Dependencies
         working-directory: frontend
-        run: npm install
+        run: |
+          npm install
+          echo "Frontend deps installed"
+          ls -la
 
       # 6️⃣ Build Angular frontend (production config)
       - name: Build Angular
         working-directory: frontend
-        run: ng build ES --configuration=production
+        run: |
+          npx ng version
+          npx ng build ES --configuration=production
+          echo "✅ Angular build finished"
+          echo "📂 Dist content:"
+          ls -la dist
+
+      # 🔍 Debug Dist Folder
+      - name: Debug Angular Dist
+        working-directory: frontend/dist
+        run: ls -la
 
       # 7️⃣ Stop IIS Frontend Site
       - name: Stop IIS Frontend
@@ -54,8 +77,11 @@ jobs:
       # 8️⃣ Deploy Frontend to IIS
       - name: Deploy Frontend to IIS
         run: |
+          echo "Clearing old IIS frontend files..."
           Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_Frontend\*" 
-          Copy-Item -Path "C:/Users/BLADE/Desktop/Production_ES/Frontend/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
+          echo "Copying new frontend build..."
+          Copy-Item -Path "frontend/dist/ES/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
+          echo "✅ Frontend deployed"
 
       # 9️⃣ Start IIS Frontend Site
       - name: Start IIS Frontend
@@ -75,13 +101,22 @@ jobs:
       - name: Restore & Build Backend
         working-directory: backend
         run: |
+          dotnet --version
           dotnet restore ES_Backend.csproj
           dotnet publish ES_Backend.csproj --configuration Release --output "C:\Users\BLADE\Desktop\Work Folder\Production_ES\Backend\update"
+          echo "✅ Backend published"
+
+      # 🔍 Debug Backend Build
+      - name: Debug Backend Build
+        run: |
+          echo "Backend output content:"
+          ls -la "C:\Users\BLADE\Desktop\Work Folder\Production_ES\Backend\update"
 
       # 1️⃣3️⃣ Backup Production Database
       - name: Backup Production Database
         run: |
           $backupFile = "C:/Users/BLADE/Desktop/Work Folder/Production_ES/DB_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').bak"
+          echo "Backing up DB to $backupFile"
           Invoke-Sqlcmd -ServerInstance "WIN-TBM17729TGQ\MSSQLSERVER01" -Database "EverythingSolutions_DB" -Query "BACKUP DATABASE [EverythingSolutions_DB] TO DISK = N'$backupFile' WITH NOFORMAT, INIT, NAME = 'DB-Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10"
 
       # 1️⃣4️⃣ Apply EF Core Migrations
@@ -89,12 +124,16 @@ jobs:
         working-directory: backend
         run: |
           dotnet ef database update --project ES_Backend.csproj --startup-project ES_Backend.csproj
+          echo "✅ Migrations applied"
 
       # 1️⃣5️⃣ Deploy Backend to IIS
       - name: Deploy Backend to IIS
         run: |
+          echo "Clearing old backend files..."
           Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_webapi\*" 
+          echo "Copying new backend build..."
           Copy-Item -Path "C:\Users\BLADE\Desktop\Work Folder\Production_ES\Backend\update\*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_webapi" -Recurse
+          echo "✅ Backend deployed"
 
       # 1️⃣6️⃣ Start IIS Backend Site
       - name: Start IIS Backend
