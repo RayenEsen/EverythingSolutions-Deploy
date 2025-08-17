@@ -3,48 +3,46 @@ name: CI/CD Deploy EverythingSolutions
 on:
   push:
     branches:
-      - main     # Frontend triggers
-      - master   # Backend triggers
+      - main     # Frontend
+      - master   # Backend
 
 jobs:
   deploy:
     runs-on: self-hosted
 
     steps:
-      # 1️⃣ Checkout Meta Repo (deployment repo itself)
+      # 1️⃣ Checkout Meta Repo (current repo)
       - name: Checkout Meta Repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Checkout Frontend Repo
+      # 2️⃣ Pull Frontend repo (always from main)
       - name: Checkout Frontend
         uses: actions/checkout@v3
         with:
           repository: RayenEsen/EverythingSolutions
           path: frontend
           ref: main
-          token: ${{ secrets.DEPLOYMENT_PAT }}
 
-      # 3️⃣ Checkout Backend Repo
+      # 3️⃣ Pull Backend repo (always from master)
       - name: Checkout Backend
         uses: actions/checkout@v3
         with:
           repository: RayenEsen/ES_Backend
           path: backend
           ref: master
-          token: ${{ secrets.DEPLOYMENT_PAT }}
 
-      # 4️⃣ Setup Node.js
+      # 4️⃣ Setup Node.js for Angular
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      # 5️⃣ Install Frontend Dependencies
+      # 5️⃣ Install Angular dependencies
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm install
 
-      # 6️⃣ Build Angular Frontend
+      # 6️⃣ Build Angular frontend (production config)
       - name: Build Angular
         working-directory: frontend
         run: ng build ES --configuration=production
@@ -57,7 +55,7 @@ jobs:
       - name: Deploy Frontend to IIS
         run: |
           Remove-Item -Recurse -Force "C:\inetpub\wwwroot\EverythingSolutions_Frontend\*" 
-          Copy-Item -Path "frontend/dist/ES/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
+          Copy-Item -Path "C:/Users/BLADE/Desktop/Production_ES/Frontend/*" -Destination "C:\inetpub\wwwroot\EverythingSolutions_Frontend" -Recurse
 
       # 9️⃣ Start IIS Frontend Site
       - name: Start IIS Frontend
@@ -89,7 +87,8 @@ jobs:
       # 1️⃣4️⃣ Apply EF Core Migrations
       - name: Apply Database Migrations
         working-directory: backend
-        run: dotnet ef database update --project ES_Backend.csproj --startup-project ES_Backend.csproj
+        run: |
+          dotnet ef database update --project ES_Backend.csproj --startup-project ES_Backend.csproj
 
       # 1️⃣5️⃣ Deploy Backend to IIS
       - name: Deploy Backend to IIS
